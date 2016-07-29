@@ -8,6 +8,9 @@
 
 #include "MemAllocator.h"
 
+
+using namespace pi;
+
 struct Data {
     int id;
     cv::Mat pic;

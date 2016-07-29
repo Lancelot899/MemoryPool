@@ -1,0 +1,11 @@
+*~
+*.o
+build
+build-*
+MemAllocator
+Makefile
+*.pro
+*.pro.user
+*.pro.user.*
+*.pro.user*
+

@@ -67,12 +67,25 @@ void func2() {
     MemAllocator<Data>::Instance().releaseBuffer(mat2, 2);
 }
 
+void testAlloc() {
+    int *data1;
+    char *data2;
+    while(true) {
+        data1 = (int*)Alloc::allocate(1024 * sizeof(int));
+        data2 = (char*)Alloc::allocate(32);
+        //! do some thing
+
+        Alloc::deallocate(data1, 1024 * sizeof(int));
+        Alloc::deallocate(data2, 32);
+    }
+
+}
 
 int main() {
     std::thread th1(func1);
     std::thread th2(func2);
 
-
+    std::thread th3(testAlloc);
     while(true);
     std::cin.get();
 

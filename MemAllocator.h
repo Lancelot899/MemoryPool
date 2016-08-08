@@ -4,6 +4,7 @@
  * @author lancelot
  * @Email  3128243880@qq.com
  * @date   20160727
+ * @version 1.1
  */
 
 #ifndef MEMALLOCATOR_H
@@ -226,439 +227,6 @@ private:
     MemAllocator() {}
 };
 
-template<>
-class MemAllocator<int> {
-public:
-    static MemAllocator<int>& Instance() {
-        static MemAllocator<int> theOneAndOnly;
-        return theOneAndOnly;
-    }
-
-    int* getBuffer(size_t num) {
-        std::unique_lock<std::mutex> lock(accessMutex);
-
-        if(availableBuffers.find(num) != availableBuffers.end()) {
-            std::deque<int*>& availableBuffer = availableBuffers.at(num);
-            if(availableBuffer.empty()) {
-                void *buf = Alloc::allocate(num * sizeof(int));
-                int* buffer = (int*)buf;
-
-                bufferSizes.insert(std::make_pair(buffer, num));
-
-                return buffer;
-            }
-
-            else {
-                int *buffer = availableBuffer.back();
-                availableBuffer.pop_back();
-
-                return buffer;
-            }
-        }
-
-        else {
-            void* buf = Alloc::allocate(num * sizeof(int));
-            int* buffer = (int*)buf;
-            bufferSizes.insert(std::make_pair(buffer, num));
-            return buffer;
-        }
-
-    }
-
-    void releaseBuffer(int* buffer, size_t num = 1) {
-        if(buffer == 0)
-            return ;
-
-        if(bufferSizes.find(buffer) != bufferSizes.end()) {
-            if(accessMutex.try_lock()) {
-                bufferSizes.erase(buffer);
-                accessMutex.unlock();
-            }
-            else
-                bufferSizes.erase(buffer);
-        }
-        Alloc::deallocate((void*)buffer, sizeof(int) * num);
-    }
-
-    void releaseBuffers() {
-        std::unique_lock<std::mutex>  lock(accessMutex);
-        for(auto p : availableBuffers) {
-            for(size_t i = 0; i < p.second.size(); ++i) {
-                releaseBuffer(p.second[i], p.first);
-            }
-            p.second.clear();
-        }
-
-        availableBuffers.clear();
-    }
-
-    void returnBuffer(int* buffer) {
-        if(buffer == 0)
-            return;
-        std::unique_lock<std::mutex> lock(accessMutex);
-        if(bufferSizes.find(buffer) == bufferSizes.end()) {
-            printf("this buffer is not in our list!\n");
-            return;
-        }
-        size_t size = bufferSizes.at(buffer);
-        if(availableBuffers.find(size) != availableBuffers.end())
-            availableBuffers.at(size).push_back(buffer);
-        else {
-            std::deque<int*> availableOfSize;
-            availableOfSize.push_back(buffer);
-            availableBuffers.insert(std::make_pair(size, availableOfSize));
-        }
-    }
-
-private:
-    MemAllocator() {}
-
-private:
-    /////////////////////////////////////////////////////
-    /// \brief memory pool
-    ////////////////////////////////////////////////////
-    std::unordered_map<int*, size_t>               bufferSizes;
-    std::unordered_map<size_t, std::deque<int*> >  availableBuffers;
-    std::mutex                                     accessMutex;
-};
-
-template <>
-class MemAllocator<int*>
-{
-public:
-    static MemAllocator< typename trait<int>::typeName >& Instance() {
-        return MemAllocator< typename trait<int>::typeName >::Instance();
-    }
-
-private:
-    MemAllocator() {}
-};
-
-
-template<>
-class MemAllocator<float> {
-public:
-    static MemAllocator<float>& Instance() {
-        static MemAllocator<float> theOneAndOnly;
-        return theOneAndOnly;
-    }
-
-    float* getBuffer(size_t num) {
-        std::unique_lock<std::mutex> lock(accessMutex);
-
-        if(availableBuffers.find(num) != availableBuffers.end()) {
-            std::deque<float*>& availableBuffer = availableBuffers.at(num);
-            if(availableBuffer.empty()) {
-                void *buf = Alloc::allocate(num * sizeof(float));
-                float* buffer = (float*)buf;
-
-                bufferSizes.insert(std::make_pair(buffer, num));
-
-                return buffer;
-            }
-
-            else {
-                float *buffer = availableBuffer.back();
-                availableBuffer.pop_back();
-
-                return buffer;
-            }
-        }
-
-        else {
-            void* buf = Alloc::allocate(num * sizeof(float));
-            float* buffer = (float*)buf;
-            bufferSizes.insert(std::make_pair(buffer, num));
-            return buffer;
-        }
-
-    }
-
-    void releaseBuffer(float* buffer, size_t num = 1) {
-        if(buffer == 0)
-            return ;
-        if(bufferSizes.find(buffer) != bufferSizes.end()) {
-            if(accessMutex.try_lock()) {
-                bufferSizes.erase(buffer);
-                accessMutex.unlock();
-            }
-            else
-                bufferSizes.erase(buffer);
-        }
-        Alloc::deallocate((void*)buffer, sizeof(float) * num);
-    }
-
-    void releaseBuffers() {
-        std::unique_lock<std::mutex>  lock(accessMutex);
-        for(auto p : availableBuffers) {
-            for(size_t i = 0; i < p.second.size(); ++i) {
-                releaseBuffer(p.second[i], p.first);
-            }
-            p.second.clear();
-        }
-
-        availableBuffers.clear();
-    }
-
-    void returnBuffer(float* buffer) {
-        if(buffer == 0)
-            return;
-        std::unique_lock<std::mutex> lock(accessMutex);
-        if(bufferSizes.find(buffer) == bufferSizes.end()) {
-            printf("this buffer is not in our list!\n");
-            return ;
-        }
-        size_t size = bufferSizes.at(buffer);
-        if(availableBuffers.find(size) != availableBuffers.end())
-            availableBuffers.at(size).push_back(buffer);
-        else {
-            std::deque<float*> availableOfSize;
-            availableOfSize.push_back(buffer);
-            availableBuffers.insert(std::make_pair(size, availableOfSize));
-        }
-    }
-
-private:
-    MemAllocator() {}
-
-private:
-    /////////////////////////////////////////////////////
-    /// \brief memory pool
-    ////////////////////////////////////////////////////
-    std::unordered_map<float*, size_t>               bufferSizes;
-    std::unordered_map<size_t, std::deque<float*> >  availableBuffers;
-    std::mutex                                     accessMutex;
-};
-
-template <>
-class MemAllocator<float*>
-{
-public:
-    static MemAllocator< typename trait<float>::typeName >& Instance() {
-        return MemAllocator< typename trait<float>::typeName >::Instance();
-    }
-
-private:
-    MemAllocator() {}
-};
-
-
-template<>
-class MemAllocator<double> {
-public:
-    static MemAllocator<double>& Instance() {
-        static MemAllocator<double> theOneAndOnly;
-        return theOneAndOnly;
-    }
-
-    double* getBuffer(size_t num) {
-        std::unique_lock<std::mutex> lock(accessMutex);
-
-        if(availableBuffers.find(num) != availableBuffers.end()) {
-            std::deque<double*>& availableBuffer = availableBuffers.at(num);
-            if(availableBuffer.empty()) {
-                void *buf = Alloc::allocate(num * sizeof(double));
-                double* buffer = (double*)buf;
-
-                bufferSizes.insert(std::make_pair(buffer, num));
-
-                return buffer;
-            }
-
-            else {
-                double *buffer = availableBuffer.back();
-                availableBuffer.pop_back();
-
-                return buffer;
-            }
-        }
-
-        else {
-            void* buf = Alloc::allocate(num * sizeof(double));
-            double* buffer = (double*)buf;
-            bufferSizes.insert(std::make_pair(buffer, num));
-            return buffer;
-        }
-
-    }
-
-    void releaseBuffer(double* buffer, size_t num = 1) {
-        if(buffer == 0)
-            return ;
-        if(bufferSizes.find(buffer) != bufferSizes.end()) {
-            if(accessMutex.try_lock()) {
-                bufferSizes.erase(buffer);
-                accessMutex.unlock();
-            }
-            else
-                bufferSizes.erase(buffer);
-        }
-        Alloc::deallocate((void*)buffer, sizeof(double) * num);
-    }
-
-    void releaseBuffers() {
-        std::unique_lock<std::mutex>  lock(accessMutex);
-        for(auto p : availableBuffers) {
-            for(size_t i = 0; i < p.second.size(); ++i) {
-                releaseBuffer(p.second[i], p.first);
-            }
-            p.second.clear();
-        }
-
-        availableBuffers.clear();
-    }
-
-    void returnBuffer(double* buffer) {
-        if(buffer == 0)
-            return;
-        std::unique_lock<std::mutex> lock(accessMutex);
-        if(bufferSizes.find(buffer) == bufferSizes.end()) {
-            printf("this buffer is not in our list!\n");
-            return;
-        }
-        size_t size = bufferSizes.at(buffer);
-        if(availableBuffers.find(size) != availableBuffers.end())
-            availableBuffers.at(size).push_back(buffer);
-        else {
-            std::deque<double*> availableOfSize;
-            availableOfSize.push_back(buffer);
-            availableBuffers.insert(std::make_pair(size, availableOfSize));
-        }
-    }
-
-private:
-    MemAllocator() {}
-
-private:
-    /////////////////////////////////////////////////////
-    /// \brief memory pool
-    ////////////////////////////////////////////////////
-    std::unordered_map<double*, size_t>               bufferSizes;
-    std::unordered_map<size_t, std::deque<double*> >  availableBuffers;
-    std::mutex                                        accessMutex;
-};
-
-template <>
-class MemAllocator<double*>
-{
-public:
-    static MemAllocator< typename trait<double>::typeName >& Instance() {
-        return MemAllocator< typename trait<double>::typeName >::Instance();
-    }
-
-private:
-    MemAllocator() {}
-};
-
-
-
-template<>
-class MemAllocator<char> {
-public:
-    static MemAllocator<char>& Instance() {
-        static MemAllocator<char> theOneAndOnly;
-        return theOneAndOnly;
-    }
-
-    char* getBuffer(size_t num) {
-        std::unique_lock<std::mutex> lock(accessMutex);
-
-        if(availableBuffers.find(num) != availableBuffers.end()) {
-            std::deque<char*>& availableBuffer = availableBuffers.at(num);
-            if(availableBuffer.empty()) {
-                void *buf = Alloc::allocate(num * sizeof(char));
-                char* buffer = (char*)buf;
-
-                bufferSizes.insert(std::make_pair(buffer, num));
-
-                return buffer;
-            }
-
-            else {
-                char *buffer = availableBuffer.back();
-                availableBuffer.pop_back();
-
-                return buffer;
-            }
-        }
-
-        else {
-            void* buf = Alloc::allocate(num * sizeof(char));
-            char* buffer = (char*)buf;
-            bufferSizes.insert(std::make_pair(buffer, num));
-            return buffer;
-        }
-
-    }
-
-    void releaseBuffer(char* buffer, size_t num = 1) {
-        if(buffer == 0)
-            return ;
-        if(bufferSizes.find(buffer) != bufferSizes.end()) {
-            if(accessMutex.try_lock()) {
-                bufferSizes.erase(buffer);
-                accessMutex.unlock();
-            }
-            else
-                bufferSizes.erase(buffer);
-        }
-        Alloc::deallocate((void*)buffer, sizeof(char) * num);
-    }
-
-    void releaseBuffers() {
-        std::unique_lock<std::mutex>  lock(accessMutex);
-        for(auto p : availableBuffers) {
-            for(size_t i = 0; i < p.second.size(); ++i) {
-                releaseBuffer(p.second[i], p.first);
-            }
-            p.second.clear();
-        }
-
-        availableBuffers.clear();
-    }
-
-    void returnBuffer(char* buffer) {
-        if(buffer == 0)
-            return;
-        std::unique_lock<std::mutex> lock(accessMutex);
-        if(bufferSizes.find(buffer) == bufferSizes.end()) {
-            printf("this buffer is not in our list!\n");
-            return;
-        }
-        size_t size = bufferSizes.at(buffer);
-        if(availableBuffers.find(size) != availableBuffers.end())
-            availableBuffers.at(size).push_back(buffer);
-        else {
-            std::deque<char*> availableOfSize;
-            availableOfSize.push_back(buffer);
-            availableBuffers.insert(std::make_pair(size, availableOfSize));
-        }
-    }
-
-private:
-    MemAllocator() {}
-
-private:
-    /////////////////////////////////////////////////////
-    /// \brief memory pool
-    ////////////////////////////////////////////////////
-    std::unordered_map<char*, size_t>               bufferSizes;
-    std::unordered_map<size_t, std::deque<char*> >  availableBuffers;
-    std::mutex                                      accessMutex;
-};
-
-template <>
-class MemAllocator<char*>
-{
-public:
-    static MemAllocator< typename trait<char>::typeName >& Instance() {
-        return MemAllocator< typename trait<char>::typeName >::Instance();
-    }
-
-private:
-    MemAllocator() {}
-};
-
 
 template<>
 class MemAllocator<void> {
@@ -763,6 +331,127 @@ public:
 private:
     MemAllocator() {}
 };
+
+
+#define __GEN_MEMALLOC_(TYPE) \
+    template<> \
+    class MemAllocator<TYPE> { \
+    public: \
+        static MemAllocator<TYPE>& Instance() { \
+            static MemAllocator<TYPE> theOneAndOnly; \
+            return theOneAndOnly; \
+        } \
+        TYPE* getBuffer(size_t num) { \
+            std::unique_lock<std::mutex> lock(accessMutex); \
+            if(availableBuffers.find(num) != availableBuffers.end()) { \
+                std::deque<TYPE*>& availableBuffer = availableBuffers.at(num); \
+                if(availableBuffer.empty()) { \
+                    void *buf = Alloc::allocate(num * sizeof(TYPE)); \
+                    TYPE* buffer = (TYPE*)buf; \
+                    bufferSizes.insert(std::make_pair(buffer, num)); \
+                    return buffer; \
+                } \
+                else { \
+                    TYPE *buffer = availableBuffer.back(); \
+                    availableBuffer.pop_back(); \
+                    return buffer; \
+                } \
+            } \
+            else { \
+                void* buf = Alloc::allocate(num * sizeof(TYPE)); \
+                TYPE* buffer = (TYPE*)buf; \
+                bufferSizes.insert(std::make_pair(buffer, num)); \
+                return buffer; \
+            } \
+        } \
+        void releaseBuffer(TYPE* buffer, size_t num = 1) { \
+            if(buffer == 0) \
+                return ; \
+            if(bufferSizes.find(buffer) != bufferSizes.end()) { \
+                if(accessMutex.try_lock()) { \
+                    bufferSizes.erase(buffer);\
+                    accessMutex.unlock(); \
+                } \
+                else \
+                    bufferSizes.erase(buffer); \
+            } \
+            Alloc::deallocate((void*)buffer, sizeof(TYPE) * num); \
+        } \
+        void releaseBuffers() { \
+            std::unique_lock<std::mutex>  lock(accessMutex); \
+            for(auto p : availableBuffers) { \
+                for(size_t i = 0; i < p.second.size(); ++i) { \
+                    releaseBuffer(p.second[i], p.first); \
+                } \
+                p.second.clear(); \
+            } \
+            availableBuffers.clear(); \
+        } \
+        void returnBuffer(TYPE* buffer) { \
+            if(buffer == 0) \
+                return; \
+            std::unique_lock<std::mutex> lock(accessMutex); \
+            if(bufferSizes.find(buffer) == bufferSizes.end()) { \
+                printf("this buffer is not in our list!\n"); \
+                return; \
+            } \
+            size_t size = bufferSizes.at(buffer); \
+            if(availableBuffers.find(size) != availableBuffers.end()) \
+                availableBuffers.at(size).push_back(buffer); \
+            else { \
+                std::deque<TYPE*> availableOfSize; \
+                availableOfSize.push_back(buffer); \
+                availableBuffers.insert(std::make_pair(size, availableOfSize)); \
+            } \
+        } \
+    private: \
+        MemAllocator() {} \
+    private: \
+        std::unordered_map<TYPE*, size_t>               bufferSizes; \
+        std::unordered_map<size_t, std::deque<TYPE*> >  availableBuffers; \
+        std::mutex                                     accessMutex; \
+    };
+
+#define __GEN_PT_MEMALLOC_(TYPE) \
+template <> \
+class MemAllocator<TYPE*> { \
+public: \
+    static MemAllocator< typename trait<TYPE>::typeName >& Instance() { \
+        return MemAllocator< typename trait<TYPE>::typeName >::Instance(); \
+    } \
+private: \
+    MemAllocator() {} \
+};
+
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+__GEN_MEMALLOC_(int)
+__GEN_MEMALLOC_(float)
+__GEN_MEMALLOC_(char)
+__GEN_MEMALLOC_(double)
+__GEN_MEMALLOC_(unsigned int)
+__GEN_MEMALLOC_(unsigned char)
+__GEN_MEMALLOC_(short)
+__GEN_MEMALLOC_(unsigned short)
+__GEN_MEMALLOC_(long)
+__GEN_MEMALLOC_(unsigned long)
+
+__GEN_PT_MEMALLOC_(int)
+__GEN_PT_MEMALLOC_(float)
+__GEN_PT_MEMALLOC_(char)
+__GEN_PT_MEMALLOC_(double)
+__GEN_PT_MEMALLOC_(unsigned int)
+__GEN_PT_MEMALLOC_(unsigned char)
+__GEN_PT_MEMALLOC_(short)
+__GEN_PT_MEMALLOC_(unsigned short)
+__GEN_PT_MEMALLOC_(long)
+__GEN_PT_MEMALLOC_(unsigned long)
+
+
 
 typedef MemAllocator<void*> Allocator;
 

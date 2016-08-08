@@ -19,6 +19,8 @@
 #include <iostream>
 #include <new>
 
+namespace pi {
+
 
 /////////////////////////////////////////////////////////////
 /// \brief when you need some memory, please use this class
@@ -54,6 +56,10 @@ public:
      * @return the old function pointer which was used to deal with above-mentioned condition
      */
     static void (*set_oom_malloc_handler(void (*f)())) ();
+
+
+    static int setDefaultNodeNum(int nn);
+    static int setInitPoolSize(int ps);
 };
 
 
@@ -454,6 +460,8 @@ __GEN_PT_MEMALLOC_(unsigned long)
 
 
 typedef MemAllocator<void*> Allocator;
+
+} // end of namespace pi
 
 #endif // MEMALLOCATOR_H
 

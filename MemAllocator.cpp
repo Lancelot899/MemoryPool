@@ -1,11 +1,21 @@
 #include <atomic>
 #include "MemAllocator.h"
 
+namespace pi {
 
 #define THROW_BAD_ALLOC std::cerr << "out of memory" << std::endl; exit(-1);
 
-const int defaultNodeNum = 20;
-const int InitPoolSize = 2048;
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+int g_defaultNodeNum = 20;          ///< default list node size
+int g_InitPoolSize = 2048;          ///< initial pool memory size
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 class AllocPrime {
 public:
@@ -208,8 +218,8 @@ AllocImpl::AllocImpl()
         free_listRD[i] = true;
     }
 
-    heap_size = InitPoolSize;
-    start_free = (char*)malloc(InitPoolSize);
+    heap_size = g_InitPoolSize;
+    start_free = (char*)malloc(heap_size);
     end_free = heap_size + start_free;
 
     poolRD = true;
@@ -219,7 +229,7 @@ AllocImpl::AllocImpl()
 
 void* AllocImpl::refill(size_t n)
 {
-    int nobjs = defaultNodeNum;
+    int nobjs = g_defaultNodeNum;
     char *chunck = chunk_alloc(n, nobjs);
     if(chunck == 0) return 0;
     obj* volatile *my_free_list = 0;
@@ -329,5 +339,21 @@ void (* Alloc::set_oom_malloc_handler(void (*f)())) ()
 }
 
 
+int Alloc::setDefaultNodeNum(int nn)
+{
+    int nn_old = g_defaultNodeNum;
 
+    g_defaultNodeNum = nn;
+    return nn_old;
+}
+
+int Alloc::setInitPoolSize(int ps)
+{
+    int ps_old = g_InitPoolSize;
+
+    g_InitPoolSize = ps;
+    return ps_old;
+}
+
+} // end of namespace pi
 

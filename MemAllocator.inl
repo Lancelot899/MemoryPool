@@ -1,6 +1,6 @@
 
-template <typename T>
-class MemAllocator<T*>
+template <typename T, typename _Allocator>
+class MemAllocator<T*, _Allocator>
 {
 public:
     static MemAllocator< typename trait<T>::typeName >& Instance() {
@@ -12,8 +12,8 @@ private:
 };
 
 
-template<>
-class MemAllocator<void> {
+template<typename _Allocator>
+class MemAllocator<void, _Allocator> {
 public:
     static MemAllocator<void>& Instance() {
         static MemAllocator<void> theOneAndOnly;
@@ -26,7 +26,7 @@ public:
         if(availableBuffers.find(bytes) != availableBuffers.end()) {
             std::deque<void*>& availableBuffer = availableBuffers.at(bytes);
             if(availableBuffer.empty()) {
-                void *buf = Alloc::allocate(bytes);
+                void *buf = _Allocator::allocate(bytes);
                 bufferSizes.insert(std::make_pair(buf, bytes));
 
                 return buf;
@@ -41,7 +41,7 @@ public:
         }
 
         else {
-            void* buf = Alloc::allocate(bytes);
+            void* buf = _Allocator::allocate(bytes);
             bufferSizes.insert(std::make_pair(buf, bytes));
             return buf;
         }
@@ -59,7 +59,7 @@ public:
             else
                 bufferSizes.erase(buffer);
         }
-        Alloc::deallocate((void*)buffer, byte);
+        _Allocator::deallocate((void*)buffer, byte);
     }
 
     void releaseBuffers() {
@@ -104,8 +104,8 @@ private:
     std::mutex                                      accessMutex;
 };
 
-template <>
-class MemAllocator<void*>
+template <typename _Allocator>
+class MemAllocator<void*, _Allocator>
 {
 public:
     static MemAllocator<void>& Instance() {
@@ -118,8 +118,8 @@ private:
 
 
 #define __GEN_MEMALLOC_(TYPE) \
-    template<> \
-    class MemAllocator<TYPE> { \
+    template<typename _Allocator> \
+    class MemAllocator<TYPE, _Allocator> { \
     public: \
         static MemAllocator<TYPE>& Instance() { \
             static MemAllocator<TYPE> theOneAndOnly; \
@@ -130,7 +130,7 @@ private:
             if(availableBuffers.find(num) != availableBuffers.end()) { \
                 std::deque<TYPE*>& availableBuffer = availableBuffers.at(num); \
                 if(availableBuffer.empty()) { \
-                    void *buf = Alloc::allocate(num * sizeof(TYPE)); \
+                    void *buf = _Allocator::allocate(num * sizeof(TYPE)); \
                     TYPE* buffer = (TYPE*)buf; \
                     bufferSizes.insert(std::make_pair(buffer, num)); \
                     return buffer; \
@@ -142,7 +142,7 @@ private:
                 } \
             } \
             else { \
-                void* buf = Alloc::allocate(num * sizeof(TYPE)); \
+                void* buf = _Allocator::allocate(num * sizeof(TYPE)); \
                 TYPE* buffer = (TYPE*)buf; \
                 bufferSizes.insert(std::make_pair(buffer, num)); \
                 return buffer; \
@@ -159,7 +159,7 @@ private:
                 else \
                     bufferSizes.erase(buffer); \
             } \
-            Alloc::deallocate((void*)buffer, sizeof(TYPE) * num); \
+            _Allocator::deallocate((void*)buffer, sizeof(TYPE) * num); \
         } \
         void releaseBuffers() { \
             std::unique_lock<std::mutex>  lock(accessMutex); \
@@ -197,8 +197,8 @@ private:
     };
 
 #define __GEN_PT_MEMALLOC_(TYPE) \
-template <> \
-class MemAllocator<TYPE*> { \
+template <typename _Allocator> \
+class MemAllocator<TYPE*, _Allocator> { \
 public: \
     static MemAllocator< typename trait<TYPE>::typeName >& Instance() { \
         return MemAllocator< typename trait<TYPE>::typeName >::Instance(); \

@@ -11,7 +11,7 @@
  * @author lancelot
  * @Email  3128243880@qq.com
  * @date   20160727
- * @version 1.2
+ * @version 1.3
  */
 
 #ifndef MEMALLOCATOR_H
@@ -87,7 +87,7 @@ struct trait {
 ///        there exist memory list for users to forbid allocate
 ///        and deallocate memory frequently
 /////////////////////////////////////////////////////////////////
-template <typename T>
+template <typename T, typename _Allocator = Alloc>
 class MemAllocator
 {
 public:
@@ -116,7 +116,7 @@ public:
         if(availableBuffers.find(num) != availableBuffers.end()) {
             std::deque<T*>& availableBuffer = availableBuffers.at(num);
             if(availableBuffer.empty()) {
-                void *buf = Alloc::allocate(num * sizeof(T));
+                void *buf = _Allocator::allocate(num * sizeof(T));
                 T* buffer = (T*)buf;
                 new(buffer)T[num];
 
@@ -134,7 +134,7 @@ public:
         }
 
         else {
-            void* buf = Alloc::allocate(num * sizeof(T));
+            void* buf = _Allocator::allocate(num * sizeof(T));
             T* buffer = (T*)buf;
             new(buffer)T[num];
 
@@ -172,7 +172,7 @@ public:
             else
                 bufferSizes.erase(buffer);
         }
-        Alloc::deallocate((void*)buffer, sizeof(T) * num);
+        _Allocator::deallocate((void*)buffer, sizeof(T) * num);
     }
 
     /**

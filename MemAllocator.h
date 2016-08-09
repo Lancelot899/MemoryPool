@@ -1,6 +1,13 @@
 /**
  * @file  MemAllocator.h
  * @brief this file define a memory allocator and a memory manager
+ *         when you use it, please use c++11 standard.
+ *         A memory allocator has two layers allocators. basic allocator is
+ *         class Alloc, which is almost like SGI allocator(https://www.sgi.com/tech/stl/alloc.html).
+ *         the superstratum has maps used to manage the memory allocated by Alloc
+ *         Each different type has only one object, but all the objects use the 
+ *         same basic allocator
+ *
  * @author lancelot
  * @Email  3128243880@qq.com
  * @date   20160727

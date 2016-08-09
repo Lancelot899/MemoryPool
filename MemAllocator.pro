@@ -26,3 +26,6 @@ LIBS        +=  -L$$OPENCV_DIR/lib \
                 -lopencv_ml -lopencv_nonfree -lopencv_objdetect \
                 -lopencv_photo -lopencv_stitching -lopencv_ts \
                 -lopencv_video -lopencv_videostab
+
+OTHER_FILES += \
+    README.md

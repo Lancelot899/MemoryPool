@@ -8,7 +8,8 @@ HEADERS += \
 
 SOURCES += \
     Test_MemoryPool.cpp \
-    MemAllocator.cpp
+    MemAllocator.cpp \
+    MemAllocator.inl
 
 QMAKE_CXXFLAGS += -std=c++11
 QMAKE_LFLAGS += -Wl,--no-as-needed

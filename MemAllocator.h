@@ -4,7 +4,7 @@
  * @author lancelot
  * @Email  3128243880@qq.com
  * @date   20160727
- * @version 1.1
+ * @version 1.2
  */
 
 #ifndef MEMALLOCATOR_H
